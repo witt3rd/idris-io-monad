@@ -1,0 +1,5 @@
+*.ibc
+build/
+*.bin
+ray
+*.ppm

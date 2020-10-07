@@ -1,0 +1,9 @@
+package io-monad
+
+pkgs = contrib
+
+sourcedir = src
+
+main = Main
+
+executable = io-monad
