@@ -137,7 +137,16 @@ data UWrld : Wrld -> UniqueType where
 Alternatively, we can "hide" the world by introducing a *transformer*:
 
 ```idris
-data WorldT : a -> Type where
+WrldT : (a : Type) -> Type
+WrldT a = Wrld -> (a, Wrld)
+```
+
+```idris
+readStrT : WrldT String
+readStrT = readStr
+
+printStrT : String -> WrldT ()
+printStrT s w = ((), printStr s w)
 ```
 
 But, how do we compose these transformer functions?  First, let's understand currying and uncurrying of functions.

@@ -63,7 +63,7 @@ data UWrld : Wrld -> UniqueType where
  - Hiding the world
  -}
 WrldT : (a : Type) -> Type
-WrldT a = Wrld -> (a, Wrld)
+WrldT x = Wrld -> (x, Wrld)
 
 readStrT : WrldT String
 readStrT = readStr
@@ -105,38 +105,51 @@ whatIsYourPureNameT =
 {-
  - `do` notation
  -}
- -- newtype WorldM a = WorldM { asT :: WorldT a }
-data WrldM : a -> Type where
-  MkWrldM : (asT : WrldT a) -> WrldM asT
+data WrldM : (a : Type) -> Type where
+  MkWrldM : (asT : WrldT a) -> WrldM a
+
+myWrldM : WrldM String
+myWrldM = MkWrldM (\w => ("hello", w))
+
+data ListOf : a -> Type where
+  MkListOf : (list : List a) -> ListOf a
+
+myStrLst : ListOf String
+myStrLst = MkListOf ["hello"]
 
 Functor WrldM where
   -- map : (func : a -> b) -> f a -> f b
-  map f x = ?map
+  map f (MkWrldM asT) = MkWrldM $ (\(a, w) => (f a, w)) . asT
 
 Applicative WrldM where
   -- pure : a -> f a
-  -- pure x = WorldM (\w -> (x, World))
-  pure x = ?pure
+  pure x = MkWrldM (\w => (x, w))
 
   -- (<*>) : f (a -> b) -> f a -> f b
-  -- wtf <*> wt = WorldM (asT wtf >>>= \f ->
-  --                      asT wt  >>>= \x ->
-  --                      ast $ pure $ f x)
-  wtf <*> wt = ?ap
+  (MkWrldM wtf) <*> (MkWrldM wt) = MkWrldM (wtf >>>= \f =>
+                                            wt  >>>= \x =>
+                                            \w    => (f x, w))
+      -- MkWrldM ( \ w =>
+      --   let (f,w1) = wtf w
+      --       (a,w2) = wt w1
+      --   in  (f a, w2)
+      -- )
 
 Monad WrldM where
   -- (>>=) : m a -> (a -> m b) -> m b
   -- wt >>= f = WorldM (asT wt >>>= asT . f)
-  wt >>= f = ?bind
-
-  -- join : m (m a) -> m a
-  join x = ?join
+  (MkWrldM wt) >>= f = MkWrldM ( \ w =>
+      let (x,w1) = wt w
+          MkWrldM foo = f x
+          (y,b) = foo w1
+      in  (y,b)
+    )
 
 printStrM : String -> WrldM ()
-printStrM = ?printStrM -- WorldM . printStrT
+printStrM = MkWrldM . printStrT
 
 readStrM : WrldM String
-readStrM = ?readStrM -- WrldM readStrT
+readStrM = MkWrldM readStrT
 
 whatIsYourPureNameM : WrldM ()
 whatIsYourPureNameM = do
